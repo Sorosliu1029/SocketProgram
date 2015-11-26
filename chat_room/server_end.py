@@ -1,69 +1,16 @@
 #!/usr/bin/python
+# encoding: utf-8
 from asyncore import dispatcher
 from asynchat import async_chat
 import socket, asyncore
 __author__ = 'liuyang'
 
 
-# server class
-class ChatServer(dispatcher):
-    """
-    chatting server
-    """
-    def __init__(self, port):
-        dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.set_reuse_addr()
-        self.bind(('', port))
-        self.listen(5)
-        self.users = {}
-        self.main_room = ChatRoom(self)
+# EndSession error class
+class EndSession(Exception):
+    """self define the exception when the session ended"""
+    pass
 
-    def handle_accept(self):
-        conn, addr = self.accept()
-        ChatSession(self, conn)
-
-
-# session class
-class ChatSession(async_chat):
-    """
-    responsible for communicating with a single user
-    """
-    def __init__(self, server, sock):
-        async_chat.__init__(self, sock)
-        self.server = server
-        self.set_terminator('\n')
-        self.data = []
-        self.name = None
-        self.enter(LoginRoom(server))
-
-    def enter(self, room):
-        """remove self from current rooms, then add to the point room"""
-        try:
-            cur = self.room
-        except AttributeError:
-            pass
-        else:
-            cur.remove(self)
-        self.room = room
-        room.add(self)
-
-    def collect_incoming_data(self, data):
-        """receive data from client"""
-        self.data.append(data)
-
-    def found_terminator(self):
-        """when one piece of data from client has been ended"""
-        line = ''.join(self.data)
-        self.data = []
-        try:
-            self.room.handle(self, line)
-        except EndSession:
-            self.handle_close()
-
-    def handle_close(self):
-        async_chat.handle_close(self)
-        self.enter(LogoutRoom(self.server))
 
 # command interpreter class
 class CommandHandler:
@@ -78,7 +25,7 @@ class CommandHandler:
         """handle the command"""
         if not line.strip():
             return
-        parts = line.split(' ',1)
+        parts = line.split(' ', 1)
         cmd = parts[0]
         try:
             line = parts[1].strip()
@@ -119,12 +66,6 @@ class Room(CommandHandler):
         raise EndSession
 
 
-# EndSession error class
-class EndSession(Exception):
-    """self define the exception when the session ended"""
-    pass
-
-
 class LoginRoom(Room):
     """
     room for user who has just login
@@ -134,7 +75,7 @@ class LoginRoom(Room):
         Room.add(self, session)
         session.push('Connect Success')
 
-    def login(self, session, line):
+    def do_login(self, session, line):
         """handle the login command"""
         name = line.strip()
         if not name:
@@ -169,8 +110,8 @@ class ChatRoom(Room):
     def do_look(self, session, line):
         """query for the online users"""
         session.push('Online Users:\n')
-        for other in self.sessions:
-            session.push(other.name + '\n')
+        for user in self.sessions:
+            session.push(user.name + '\n')
 
 
 class LogoutRoom(Room):
@@ -183,6 +124,68 @@ class LogoutRoom(Room):
             del self.server.users[session.name]
         except KeyError:
             pass
+
+
+# session class
+class ChatSession(async_chat):
+    """
+    responsible for communicating with a single user
+    """
+    def __init__(self, server, sock):
+        async_chat.__init__(self, sock)
+        self.server = server
+        self.set_terminator('\n')
+        self.data = []
+        self.name = None
+        self.enter(LoginRoom(server))
+
+    def enter(self, room):
+        """remove self from current rooms, then add to the new room"""
+        try:
+            cur = self.room
+        except AttributeError:
+            pass
+        else:
+            cur.remove(self)
+        self.room = room
+        room.add(self)
+
+    def collect_incoming_data(self, data):
+        """receive data from client"""
+        self.data.append(data)
+
+    def found_terminator(self):
+        """when one piece of data from client has been ended"""
+        line = ''.join(self.data)
+        self.data = []
+        try:
+            self.room.handle(self, line)
+        except EndSession:
+            self.handle_close()
+
+    def handle_close(self):
+        async_chat.handle_close(self)
+        self.enter(LogoutRoom(self.server))
+
+
+# server class
+class ChatServer(dispatcher):
+    """
+    chatting server
+    """
+    def __init__(self, port):
+        dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.set_reuse_addr()
+        self.bind(('', port))
+        self.listen(5)
+        self.users = {}
+        self.main_room = ChatRoom(self)
+
+    def handle_accept(self):
+        conn, addr = self.accept()
+        ChatSession(self, conn)
+
 
 PORT = 8888
 if __name__ == '__main__':

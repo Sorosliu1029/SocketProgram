@@ -13,7 +13,7 @@ class LoginFrame(wx.Frame):
     login window
     """
     def __init__(self, parent, id, title, size):
-        """initialize, add widgets and bind to evert"""
+        """initialize, add widgets and bind to event"""
         wx.Frame.__init__(self, parent, id, title)
         self.SetSize(size)
         self.Center()
@@ -31,29 +31,32 @@ class LoginFrame(wx.Frame):
         """process the login"""
         try:
             serverAddress = self.serverAddress.GetLineText(0).split(':')
-            con.open(serverAddress[0], port=int(serverAddress[1]), timeout=10)
+            # con.open(serverAddress[0], port=int(serverAddress[1]), timeout=10)
+            con.open('127.0.0.1', port=8888, timeout=10)
             response = con.read_some()
             if response != 'Connect Success':
-                self.showDialog('Error', 'Connect Fail!', (95,20))
+                self.showDialog('Connect Fail!', 'Error')
                 return
-            con.write('login' + str(self.userName.GetLineText(0)) + '\n')
+            con.write('login ' + str(self.userName.GetLineText(0)) + '\n')
+            # con.write('login liuyang\n')
             response = con.read_some()
             if response == 'User Name Empty!':
-                self.showDialog('Error', 'User Name Empty!', (135,20))
+                self.showDialog('User Name Empty!', 'Error')
             elif response == 'User Name Exist!':
-                self.showDialog('Error', 'User Name Exist!', (135, 20))
+                self.showDialog('User Name Exist!', 'Error')
             else:
                 self.Close()
-                ChatFrame(None, -2, title='Python Chat Client', size=(500, 350))
+                ChatFrame(None, -2, title='Python Chat Client', size=(500, 400))
         except Exception:
-            self.showDialog('Error', 'Connect Fail!', (95,20))
+            self.showDialog('Connect Fail!', 'Error')
 
-    def showDialog(self, title, content, size):
+    def showDialog(self, content, title):
         """show the error info"""
-        dialog = wx.Dialog(self, title=title, size=size)
+        dialog = wx.MessageDialog(self, content, title, wx.OK | wx.CANCEL | wx.ICON_QUESTION)
         dialog.Center()
-        wx.StaticText(dialog, label=content)
-        dialog.ShowModal()
+        if dialog.ShowModal() == wx.ID_OK:
+            dialog.Destroy()
+
 
 # chat window
 class ChatFrame(wx.Frame):
