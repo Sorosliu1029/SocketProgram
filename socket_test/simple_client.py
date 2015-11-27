@@ -16,23 +16,23 @@ except socket.error:
 
 print('Socket Created.')
 
-host = 'www.sorosliu.xyz'
-port = 80
+host = '127.0.0.1'
+port = 8888
 
-try:
-    remote_ip = socket.gethostbyname(host)
-except socket.gaierror:
-    # could not resolve
-    print('Hostname could not be resolved. Exiting')
-    sys.exit()
+# try:
+#     remote_ip = socket.gethostbyname(host)
+# except socket.gaierror:
+#     # could not resolve
+#     print('Hostname could not be resolved. Exiting')
+#     sys.exit()
 
 # Connect to remote server
-s.connect((remote_ip, port))
+s.connect((host, port))
 
-print('Socket Connected to ' + host + ' on ip ' + remote_ip)
+print('Socket Connected to ' + host + ' on ip ' + str(port))
 
 # Send some data to remote server
-message = 'GET / HTTP/1.1\r\n\r\n'
+message = 'haha'
 
 try:
     # Set theo whole string

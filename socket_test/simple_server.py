@@ -6,7 +6,7 @@ this server simply reply once for each request
 import socket
 import sys
 
-HOST = ''
+HOST = '127.0.0.1'
 PORT = 8888 # use a non-privileged port
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
