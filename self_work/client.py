@@ -29,29 +29,41 @@ class LoginFrame(wx.Frame):
         self.userName = wx.TextCtrl(self, pos=(100, 90), size=(150, 25))
         self.loginButton = wx.Button(self, label='Login', pos=(80, 145), size=(130, 30))
         self.loginButton.Bind(wx.EVT_BUTTON, self.login)
+        self.name = None
         self.Show()
 
     def login(self, event):
         """..."""
         try:
-            # serverHost = str(self.serverHost.GetLineText(0).strip())
-            # serverPort = int(self.serverPort.GetLineText(0).strip())
-            # client.open(serverHost, serverPort)
-            client.open('127.0.0.1', 9999)
-            response = client.receive()
-            if response != 'Connect Success':
-                self.showDialog('Connect Failed!', 'Error')
+            if not client.connected:
+                # serverHost = str(self.serverHost.GetLineText(0).strip())
+                # serverPort = int(self.serverPort.GetLineText(0).strip())
+                # client.open(serverHost, serverPort)
+                client.open('127.0.0.1', 9998)
+                response = client.receive()
+                if response != 'Connect Success':
+                    self.showDialog('Connect Failed!', 'Error')
+                    return
+            self.name = str(self.userName.GetLineText(0))
+            if not self.name.strip():
+                self.showDialog('User name cannot be empty', 'Error')
                 return
-            # client.sendall('login ' + str(self.userName.GetLineText(0)) + '\n')
-            client.sendall('login liuyang\n')
+            if ' ' in self.name:
+                self.showDialog('User name cannot contain space', 'Error')
+                return
+            client.sendall(self.name + ' login')
+            # client.sendall('liuyang login')
+            # self.name = 'liuyang'
             response = client.receive()
-            if response in ['User Name Empty!', 'User Name Exist!']:
+            if response == 'User Name Exist!':
                 self.showDialog(response, 'Error')
-            else:
+            elif response == 'Login Success':
                 self.Close()
-                ChatFrame(None, -2, title='**** Chatting Room ****', size=(500, 400))
+                ChatFrame(None, -2, self.name, title='**** Chatting Room ****', size=(500, 400))
+            else:
+                raise Exception
         except Exception:
-            self.showDialog('Unknow Error', 'Error')
+            self.showDialog('Unknown Error', 'Error')
             raise
 
     def showDialog(self, content, title):
@@ -66,7 +78,7 @@ class ChatFrame(wx.Frame):
     """
 
     """
-    def __init__(self, parent, id, title, size):
+    def __init__(self, parent, id, userName, title, size):
         wx.Frame.__init__(self, parent, id, title)
         self.SetSize(size)
         self.Center()
@@ -79,6 +91,7 @@ class ChatFrame(wx.Frame):
         self.sendButton.Bind(wx.EVT_BUTTON, self.sendMsg)
         self.usersButton.Bind(wx.EVT_BUTTON, self.queryUsers)
         self.closeButton.Bind(wx.EVT_BUTTON, self.close)
+        self.name = userName
         thread.start_new_thread(self.receiveMsg, ())
         self.Show()
 
@@ -86,16 +99,16 @@ class ChatFrame(wx.Frame):
         """..."""
         message = str(self.message.GetLineText(0).strip())
         if message != '':
-            client.sendall('say ' + message + '\n')
+            client.sendall(self.name + ' say ' + message + '\n')
             self.message.Clear()
 
     def queryUsers(self, event):
         """..."""
-        client.sendall('query\n')
+        client.sendall(self.name + ' query')
 
     def close(self, event):
         """..."""
-        client.sendall('logout\n')
+        client.sendall(self.name + ' logout')
         client.close()
         self.Close()
 
@@ -115,6 +128,7 @@ class ChatClient(socket.socket):
     def __init__(self):
         socket.socket.__init__(self)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connected = False
         # self.sock.connect((host, port))
         # self.sock.settimeout(3)
 
@@ -127,9 +141,11 @@ class ChatClient(socket.socket):
     def open(self, host, port, timeout=10):
         self.sock.connect((host, port))
         self.sock.settimeout(timeout)
+        self.connected = True
 
     def close(self):
         self.sock.close()
+        self.connected = False
 
     def receive(self):
         return self.sock.recv(4096)
