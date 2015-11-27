@@ -37,7 +37,7 @@ class LoginFrame(wx.Frame):
             # serverHost = str(self.serverHost.GetLineText(0).strip())
             # serverPort = int(self.serverPort.GetLineText(0).strip())
             # client.open(serverHost, serverPort)
-            client.open('127.0.0.1', 8888)
+            client.open('127.0.0.1', 9999)
             response = client.receive()
             if response != 'Connect Success':
                 self.showDialog('Connect Failed!', 'Error')
@@ -103,7 +103,7 @@ class ChatFrame(wx.Frame):
         """"..."""
         while True:
             sleep(0.5)
-            print(client.sock.gettimeout())
+            # print(client.sock.gettimeout())
             try:
                 result = client.receive()
             except socket.error:
