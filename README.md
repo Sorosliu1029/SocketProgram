@@ -241,7 +241,7 @@ ChatClient封装了socket的基本操作`connect()`,`close()`,`recv()`,`sendall(
 * S2. 若S1失败,提示错误信息。否则检查用户名是否合法，合法的话发送登陆('ADD')的请求报文
 * S3. 若S2成功，即登陆成功，则显示聊天室界面。否则提示错误信息
 
-![client_login](client_login.png)
+![client_login](https://github.com/Sorosliu1029/SocketProgram/blob/master/client_login.png?raw=true)
 
 #### d. 聊天室界面
 
@@ -252,7 +252,7 @@ ChatClient封装了socket的基本操作`connect()`,`close()`,`recv()`,`sendall(
 * Close按钮: 发送退出聊天('DELETE')的请求报文
 * `receiveMessage()`：**客户端另外创建线程**，用来不间断地接收服务器发回的响应报文，将接收到的响应报文处理，然后将实体内容添加到聊天室界面中
 
-![client_chat](client_chat.png)
+![client_chat](https://github.com/Sorosliu1029/SocketProgram/blob/master/client_chat.png?raw=true)
 
 ### <a name="Server"></a>3. 聊天室服务器端
 
